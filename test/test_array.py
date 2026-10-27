@@ -938,6 +938,26 @@ def test_typealiastype():
     assert _to_set([x]) == _to_set([Float[np.ndarray, "3"]])
 
 
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="requires Python 3.12")
+def test_generic_typealiastype():
+    from typing import TypeAliasType
+
+    T = TypeVar("T")
+    Foo = TypeAliasType("Foo", T | np.ndarray, type_params=(T,))
+
+    x = Bool[Foo[bool], ""]
+    assert get_origin(x) is Union
+    assert _to_set(get_args(x)) == _to_set([bool, Bool[np.ndarray, ""]])
+
+    x = Float[Foo[bool], "3"]
+    assert _to_set([x]) == _to_set([Float[np.ndarray, "3"]])
+
+    x = Bool[Union[jax.Array, Foo[bool]], ""]
+    assert _to_set(get_args(x)) == _to_set(
+        [bool, Bool[jax.Array, ""], Bool[np.ndarray, ""]]
+    )
+
+
 # https://github.com/patrick-kidger/jaxtyping/issues/374
 def test_union_of_arraylike():
     Arrayish = Union[jax.Array, np.typing.ArrayLike]
